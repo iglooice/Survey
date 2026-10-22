@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Field Audit Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #edf0f3;
+        --sf: #fff;
+        --ink: #16212b;
+        --mu: #5e6e7c;
+        --ln: #d6dde3;
+        --ac: #0e7c8b;
+        --ok: #2e7d4f;
+        --wn: #c77d0a;
+        --bd: #b3362b;
+        --ul: #8a9aa8;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        color-scheme: light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #10171d;
+          --sf: #18222b;
+          --ink: #e6ecf1;
+          --mu: #8fa0ae;
+          --ln: #2a3743;
+          --ac: #4fc3d3;
+          --ok: #5cc28a;
+          --wn: #e3a445;
+          --bd: #ee7a6e;
+          --ul: #5e7384;
+          color-scheme: dark;
+        }
+      }
+
+      :root[data-theme="dark"] {
+        --bg: #10171d;
+        --sf: #18222b;
+        --ink: #e6ecf1;
+        --mu: #8fa0ae;
+        --ln: #2a3743;
+        --ac: #4fc3d3;
+        --ok: #5cc28a;
+        --wn: #e3a445;
+        --bd: #ee7a6e;
+        --ul: #5e7384;
+        color-scheme: dark;
+      }
+
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          400 15px/1.5 "Source Sans 3",
+          system-ui,
+          sans-serif;
+      }
+
+      h1,
+      h2,
+      .num {
+        font-family:
+          "Bricolage Grotesque", "Source Sans 3", system-ui, sans-serif;
+      }
+
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 20px 16px 56px;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.1;
+        margin: 0 0 4px;
+        font-weight: 700;
+      }
+
+      .sub {
+        color: var(--mu);
+      }
+
+      .btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      button,
+      .btn {
+        font:
+          600 14px "Source Sans 3",
+          sans-serif;
+        border: 1px solid var(--ln);
+        background: var(--sf);
+        color: var(--ink);
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      button.pri,
+      .btn.pri {
+        background: var(--ac);
+        border-color: var(--ac);
+        color: #fff;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--ac);
+        outline-offset: 2px;
+      }
+
+      .err {
+        background: color-mix(in srgb, var(--bd) 14%, var(--sf));
+        border: 1px solid var(--bd);
+        padding: 10px 12px;
+        border-radius: 6px;
+        margin-bottom: 14px;
+      }
+
+      .strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .tile {
+        background: var(--sf);
+        border: 1px solid var(--ln);
+        border-left: 6px solid var(--ok);
+        border-radius: 4px;
+        padding: 8px 10px;
+      }
+
+      .tile.warn {
+        border-left-color: var(--wn);
+      }
+
+      .tile.bad {
+        border-left-color: var(--bd);
+      }
+
+      .tile b {
+        display: block;
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 16px;
+      }
+
+      .tile span {
+        color: var(--mu);
+        font-size: 13px;
+      }
+
+      .legend {
+        display: flex;
+        gap: 14px;
+        color: var(--mu);
+        font-size: 13px;
+        margin: -10px 0 18px;
+        flex-wrap: wrap;
+      }
+
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0;
+        border: 1px solid var(--ln);
+        background: var(--sf);
+        border-radius: 8px;
+        margin-bottom: 18px;
+      }
+
+      .kpi {
+        padding: 14px 16px;
+        border-right: 1px solid var(--ln);
+      }
+
+      .kpi:last-child {
+        border-right: 0;
+      }
+
+      .kpi .num {
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .kpi small {
+        color: var(--mu);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .card {
+        background: var(--sf);
+        border: 1px solid var(--ln);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      h2 {
+        font-size: 17px;
+        margin: 0 0 12px;
+        font-weight: 700;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 118px 1fr 52px;
+        gap: 8px;
+        align-items: center;
+        margin: 6px 0;
+        font-size: 14px;
+      }
+
+      .row .l {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tr {
+        background: color-mix(in srgb, var(--ln) 60%, transparent);
+        border-radius: 3px;
+        height: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        padding: 1px 0;
+      }
+
+      .bar {
+        display: block;
+        height: 6px;
+        border-radius: 2px;
+        min-width: 2px;
+      }
+
+      .tr.one {
+        height: 12px;
+        padding: 0;
+      }
+
+      .tr.one .bar {
+        height: 100%;
+      }
+
+      .v {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .key {
+        color: var(--mu);
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .key i {
+        display: inline-block;
+        width: 10px;
+        height: 6px;
+        margin: 0 4px 1px 10px;
+        border-radius: 2px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--ln);
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--mu);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      tr.r {
+        cursor: pointer;
+      }
+
+      tr.r:hover td {
+        background: color-mix(in srgb, var(--ac) 7%, transparent);
+      }
+
+      .scroll {
+        overflow-x: auto;
+      }
+
+      .chip {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 3px;
+        background: color-mix(in srgb, var(--ok) 18%, transparent);
+        color: var(--ok);
+      }
+
+      .chip.n {
+        background: color-mix(in srgb, var(--ul) 20%, transparent);
+        color: var(--mu);
+      }
+
+      .chip.b {
+        background: color-mix(in srgb, var(--bd) 18%, transparent);
+        color: var(--bd);
+      }
+
+      .det td {
+        background: color-mix(in srgb, var(--ln) 35%, transparent);
+      }
+
+      .det dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 3px 14px;
+        margin: 0;
+      }
+
+      .det dt {
+        color: var(--mu);
+      }
+
+      .det dd {
+        margin: 0;
+      }
+
+      .filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      input,
+      select,
+      textarea {
+        font:
+          400 14px "Source Sans 3",
+          sans-serif;
+        padding: 7px 9px;
+        border: 1px solid var(--ln);
+        background: var(--bg);
+        color: var(--ink);
+        border-radius: 6px;
+        width: 100%;
+      }
+
+      .filters input,
+      .filters select {
+        width: auto;
+      }
+
+      .form {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 10px;
+      }
+
+      .form label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 13px;
+        color: var(--mu);
+      }
+
+      .form .wide {
+        grid-column: 1/-1;
+      }
+
+      .drop {
+        border: 2px dashed var(--ln);
+        border-radius: 10px;
+        padding: 44px 20px;
+        text-align: center;
+        background: var(--sf);
+      }
+
+      .drop.on {
+        border-color: var(--ac);
+      }
+
+      .drop h2 {
+        font-size: 24px;
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      .head h2 {
+        margin: 0;
+      }
+
+      .head input {
+        width: 260px;
+        max-width: 100%;
+      }
+
+      .del {
+        border: 0;
+        background: none;
+        color: var(--bd);
+        padding: 2px 6px;
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      const { useState, useMemo, useEffect, useRef } = React;
+      const html = htm.bind(React.createElement);
+      // Column order of the Annex A sheet (A..AL)
+      const COLS = [
+        "zone",
+        "date",
+        "area",
+        "tehsil",
+        "district",
+        "lat",
+        "lng",
+        "mp",
+        "mpMin",
+        "pocName",
+        "pocNo",
+        "dept",
+        "desig",
+        "locName",
+        "locContact",
+        "cmo",
+        "siteId",
+        "tech",
+        "sLat",
+        "sLng",
+        "cPoc",
+        "cPocDesig",
+        "cPocNo",
+        "calls",
+        "ok",
+        "fail",
+        "voiceRemarks",
+        "tests",
+        "dl",
+        "ul",
+        "commercial",
+        "gen",
+        "solar",
+        "backup",
+        "health",
+        "loadShed",
+        "admin",
+        "remarks",
+      ];
+      const NUMS = [
+        "calls",
+        "ok",
+        "fail",
+        "tests",
+        "dl",
+        "ul",
+        "backup",
+        "loadShed",
+      ];
+      const yn = (v) => /^y/i.test(String(v || "").trim());
+      const f1 = (n) => (+n || 0).toFixed(1);
+      const adminIssue = (r) =>
+        !/^(n\/?a|-|)$/i.test(String(r.admin || "").trim());
+      const st = (r) =>
+        !yn(r.health) || r.backup === 0
+          ? "bad"
+          : adminIssue(r) || r.fail > 0
+            ? "warn"
+            : "ok";
+      const fmtDate = (v) => {
+        if (typeof v === "number")
+          return new Date(Math.round((v - 25569) * 864e5))
+            .toISOString()
+            .slice(0, 10);
+        return String(v || "");
+      };
+      const showDate = (s) => {
+        const d = new Date(s + "T00:00:00");
+        return isNaN(d)
+          ? s
+          : d.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            });
+      };
+      /* ===== PASTE YOUR FIREBASE WEB APP CONFIG HERE ===== */
+      const CONFIG = {
+        apiKey: "AIzaSyBBT_bQE4fnfhh1w_w0sHe09Ng5SBnwYwY",
+        authDomain: "surv-a75a9.firebaseapp.com",
+        projectId: "surv-a75a9",
+        appId: "1:87896628452:web:6c92946a4f8465b8b320f1",
+      };
+      /* ==================================================== */
+      let db = null;
+      try {
+        if (!CONFIG.apiKey.startsWith("PASTE")) {
+          firebase.initializeApp(CONFIG);
+          db = firebase.firestore();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      const col = () => db.collection("sites");
+      const clean = (r) => {
+        const { id, ...x } = r;
+        return JSON.parse(JSON.stringify(x));
+      };
+      async function writeMany(list) {
+        const base = Date.now();
+        for (let i = 0; i < list.length; i += 400) {
+          const b = db.batch();
+          list
+            .slice(i, i + 400)
+            .forEach((r, j) =>
+              b.set(col().doc(), { ...clean(r), createdAt: base + i + j }),
+            );
+          await b.commit();
+        }
+      }
+      async function wipe() {
+        const s = await col().get();
+        for (let i = 0; i < s.docs.length; i += 400) {
+          const b = db.batch();
+          s.docs.slice(i, i + 400).forEach((d) => b.delete(d.ref));
+          await b.commit();
+        }
+      }
+      let uid = 0;
+      const enrich = (o) => {
+        const r = { ...o };
+        NUMS.forEach((k) => {
+          r[k] = parseFloat(r[k]) || 0;
+        });
+        if (!r.fail && r.calls > r.ok) r.fail = r.calls - r.ok;
+        ["siteId", "zone", "area", "district", "cmo", "tech", "mp"].forEach(
+          (k) => (r[k] = String(r[k] ?? "").trim()),
+        );
+        r.date = fmtDate(r.date);
+        r.op = r.cmo || "Unknown";
+        r.id = ++uid;
+        return r;
+      };
+      function parseBook(buf) {
+        const wb = XLSX.read(buf, { type: "array" });
+        const rows = XLSX.utils
+          .sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+            header: 1,
+            defval: "",
+            raw: true,
+          })
+          .slice(2);
+        return rows
+          .filter((r) => String(r[16]).trim() !== "")
+          .map((r) => {
+            const o = {};
+            COLS.forEach((c, i) => (o[c] = r[i]));
+            return enrich(o);
+          });
+      }
+      const FIELDS = [
+        ["zone", "Zone"],
+        ["date", "Visit date", "date"],
+        ["area", "Area"],
+        ["district", "District"],
+        ["mp", "Parliamentarian"],
+        ["cmo", "Operator"],
+        ["siteId", "Site ID"],
+        ["tech", "Technology"],
+        ["calls", "Calls made", "number"],
+        ["ok", "Successful calls", "number"],
+        ["dl", "Avg DL (Mbps)", "number"],
+        ["ul", "Avg UL (Mbps)", "number"],
+        ["commercial", "Commercial power", "yn"],
+        ["gen", "Generator", "yn"],
+        ["solar", "Solar", "yn"],
+        ["backup", "Backup (hrs)", "number"],
+        ["health", "Backup health check", "yn"],
+        ["loadShed", "Load shedding (hrs)", "number"],
+        ["admin", "Administrative issues"],
+        ["remarks", "Recommendations / remarks", "area"],
+      ];
+
+      const Bar = ({ v, max, c }) =>
+        html`<i
+          className="bar"
+          style=${{ width: (max ? (v / max) * 100 : 0) + "%", background: c }}
+        ></i>`;
+      const Chip = ({ y }) =>
+        html`<span className=${"chip " + (y ? "" : "n")}
+          >${y ? "Yes" : "No"}</span
+        >`;
+
+      function App() {
+        const [rows, setRows] = useState([]);
+        const [ready, setReady] = useState(false);
+        const [err, setErr] = useState("");
+        const [src, setSrc] = useState("");
+        const [drag, setDrag] = useState(false);
+        const [fo, setFo] = useState("All"),
+          [fz, setFz] = useState("All"),
+          [q, setQ] = useState(""),
+          [open, setOpen] = useState(null),
+          [add, setAdd] = useState(false);
+        const [form, setForm] = useState({});
+        const [tq, setTq] = useState("");
+        const fileRef = useRef();
+        const guard = async (fn) => {
+          if (!db) {
+            setErr(
+              "Firebase is not set up yet. Paste your Firebase config near the top of this file.",
+            );
+            return;
+          }
+          try {
+            await fn();
+          } catch (x) {
+            setErr("Could not save to the shared database: " + x.message);
+          }
+        };
+        const replaceAll = (l) =>
+          guard(async () => {
+            await wipe();
+            await writeMany(l);
+          });
+        const saveOne = (r) => guard(() => writeMany([r]));
+        const removeOne = (id) => guard(() => col().doc(id).delete());
+        useEffect(() => {
+          if (!db) {
+            setErr(
+              "Firebase is not set up yet. Paste your Firebase config near the top of this file.",
+            );
+            setReady(true);
+            return;
+          }
+          return col()
+            .orderBy("createdAt")
+            .onSnapshot(
+              (s) => {
+                setRows(s.docs.map((d) => ({ ...d.data(), id: d.id })));
+                setReady(true);
+              },
+              (e) => {
+                setErr("Cannot read the shared database: " + e.message);
+                setReady(true);
+              },
+            );
+        }, []);
+
+        const load = async (f) => {
+          if (!f) return;
+          try {
+            const r = parseBook(await f.arrayBuffer());
+            if (!r.length)
+              throw new Error(
+                "No site rows found. Use the Annex A layout: two header rows, then one row per site with the Site ID in column Q.",
+              );
+            if (
+              rows.length &&
+              !confirm(
+                "Replace the " +
+                  rows.length +
+                  " shared records with this file? Everyone will see the change.",
+              )
+            )
+              return;
+            setErr("");
+            await replaceAll(r);
+            setSrc(f.name);
+            setFo("All");
+            setFz("All");
+            setQ("");
+          } catch (x) {
+            setErr(x.message || "Could not read this file.");
+          }
+        };
+        const submit = async () => {
+          if (!String(form.siteId || "").trim()) {
+            setErr("Enter a Site ID before saving the record.");
+            return;
+          }
+          const last = rows[rows.length - 1] || {};
+          setErr("");
+          await saveOne(enrich({ ...last, ...form, fail: 0 }));
+          setForm({});
+          setAdd(false);
+        };
+
+        const ops = useMemo(
+          () => ["All", ...new Set(rows.map((r) => r.op))],
+          [rows],
+        );
+        const zones = useMemo(
+          () => ["All", ...new Set(rows.map((r) => r.zone))],
+          [rows],
+        );
+        const data = useMemo(
+          () =>
+            rows.filter(
+              (r) =>
+                (fo === "All" || r.op === fo) &&
+                (fz === "All" || r.zone === fz) &&
+                (!q ||
+                  Object.values(r)
+                    .join(" ")
+                    .toLowerCase()
+                    .includes(q.toLowerCase())),
+            ),
+          [rows, fo, fz, q],
+        );
+        const S = useMemo(() => {
+          const n = data.length,
+            sum = (f) => data.reduce((a, r) => a + f(r), 0),
+            calls = sum((r) => r.calls);
+          return {
+            n,
+            calls,
+            ok: sum((r) => r.ok),
+            dl: n ? sum((r) => r.dl) / n : 0,
+            ul: n ? sum((r) => r.ul) / n : 0,
+            health: data.filter((r) => yn(r.health)).length,
+            bad: data.filter((r) => st(r) === "bad").length,
+            warn: data.filter((r) => st(r) === "warn").length,
+            comm: data.filter((r) => yn(r.commercial)).length,
+            gen: data.filter((r) => yn(r.gen)).length,
+            sol: data.filter((r) => yn(r.solar)).length,
+            bk: n ? sum((r) => r.backup) / n : 0,
+            ls: n ? sum((r) => r.loadShed) / n : 0,
+          };
+        }, [data]);
+        const byOp = useMemo(() => {
+          const m = {};
+          data.forEach((r) => (m[r.op] = m[r.op] || []).push(r));
+          return Object.entries(m).map(([k, a]) => ({
+            k,
+            n: a.length,
+            dl: a.reduce((s, r) => s + r.dl, 0) / a.length,
+            ul: a.reduce((s, r) => s + r.ul, 0) / a.length,
+            h: a.filter((r) => yn(r.health)).length,
+          }));
+        }, [data]);
+        const maxT = Math.max(1, ...data.map((r) => Math.max(r.dl, r.ul))),
+          maxB = Math.max(1, ...data.map((r) => r.backup));
+        const sorted = [...data].sort((a, b) => b.dl - a.dl);
+        const tdata = data.filter(
+          (r) =>
+            !tq ||
+            Object.values(r).join(" ").toLowerCase().includes(tq.toLowerCase()),
+        );
+        const issues = data.filter(
+          (r) => adminIssue(r) || !yn(r.health) || r.backup === 0,
+        );
+        const dates = [...new Set(rows.map((r) => r.date))].sort();
+        const light = () => {
+          const d = document.documentElement;
+          d.dataset.theme = d.dataset.theme === "dark" ? "light" : "dark";
+        };
+
+        const bar = html`<div className="btns">
+          <input
+            ref=${fileRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            hidden
+            onChange=${(e) => {
+              load(e.target.files[0]);
+              e.target.value = "";
+            }}
+          />
+          <button className="pri" onClick=${() => fileRef.current.click()}>
+            Upload file
+          </button>
+          <button onClick=${() => setAdd(!add)}>
+            ${add ? "Close form" : "Add a record"}
+          </button>
+          ${rows.length > 0 &&
+          html`<button
+            onClick=${async () => {
+              if (confirm("Delete all shared records for everyone?")) {
+                await replaceAll([]);
+                setSrc("");
+              }
+            }}
+          >
+            Clear all
+          </button>`}
+          <button onClick=${light}>Light / dark</button>
+        </div>`;
+
+        return html`<div className="wrap">
+          <header>
+            <div>
+              <h1>Field audit dashboard</h1>
+              <div className="sub">
+                ${rows.length
+                  ? [...new Set(rows.map((r) => r.district))].join(", ") +
+                    " · " +
+                    (dates.length
+                      ? showDate(dates[0]) +
+                        (dates.length > 1
+                          ? " to " + showDate(dates[dates.length - 1])
+                          : "")
+                      : "") +
+                    " · " +
+                    [...new Set(rows.map((r) => r.mp))]
+                      .filter(Boolean)
+                      .join(", ") +
+                    (src ? " · " + src : "")
+                  : "Network quality and power backup at surveyed cell sites"}
+              </div>
+            </div>
+            ${bar}
+          </header>
+          ${err && html`<div className="err" role="alert">${err}</div>`}
+          ${!ready &&
+          html`<p className="sub">Connecting to the shared database…</p>`}
+          ${add &&
+          html`<div className="card" style=${{ marginBottom: 18 }}>
+            <h2>Add a record</h2>
+            <p className="sub" style=${{ marginTop: -6 }}>
+              Visit details you leave blank (contacts, coordinates,
+              parliamentarian) are copied from the last record.
+            </p>
+            <div className="form">
+              ${FIELDS.map(
+                ([k, l, t]) =>
+                  html`<label key=${k} className=${t === "area" ? "wide" : ""}
+                    >${l}
+                    ${t === "yn"
+                      ? html`<select
+                          value=${form[k] || ""}
+                          onChange=${(e) =>
+                            setForm({ ...form, [k]: e.target.value })}
+                        >
+                          <option value="">Choose</option>
+                          <option>Yes</option>
+                          <option>No</option>
+                        </select>`
+                      : t === "area"
+                        ? html`<textarea
+                            rows="2"
+                            value=${form[k] || ""}
+                            onChange=${(e) =>
+                              setForm({ ...form, [k]: e.target.value })}
+                          ></textarea>`
+                        : html`<input
+                            type=${t || "text"}
+                            step="any"
+                            value=${form[k] ?? ""}
+                            onChange=${(e) =>
+                              setForm({ ...form, [k]: e.target.value })}
+                          />`}</label
+                  >`,
+              )}
+            </div>
+            <div className="btns" style=${{ marginTop: 12 }}>
+              <button className="pri" onClick=${submit}>Save record</button
+              ><button
+                onClick=${() => {
+                  setForm({});
+                  setAdd(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>`}
+          ${!rows.length
+            ? html`<div
+                className=${"drop" + (drag ? " on" : "")}
+                onDragOver=${(e) => {
+                  e.preventDefault();
+                  setDrag(true);
+                }}
+                onDragLeave=${() => setDrag(false)}
+                onDrop=${(e) => {
+                  e.preventDefault();
+                  setDrag(false);
+                  load(e.dataTransfer.files[0]);
+                }}
+              >
+                <h2>Drop your Annex A spreadsheet here</h2>
+                <p className="sub">
+                  .xlsx, .xls or .csv with two header rows, then one row per
+                  site. Everything is saved to a shared database, so anyone with
+                  the link sees the same data. You can also add records by hand
+                  with “Add a record”.
+                </p>
+                <button
+                  className="pri"
+                  onClick=${() => fileRef.current.click()}
+                >
+                  Choose a file
+                </button>
+              </div>`
+            : html`<div>
+                <div className="strip">
+                  ${sorted.length
+                    ? [...data].map(
+                        (r) =>
+                          html`<div
+                            key=${r.id}
+                            className=${"tile " + st(r)}
+                            title=${r.remarks}
+                          >
+                            <b>${r.siteId}</b
+                            ><span>${r.op} · ${f1(r.dl)} Mbps</span>
+                          </div>`,
+                      )
+                    : null}
+                </div>
+                <div className="legend">
+                  <span
+                    ><i style=${{ background: "var(--ok)" }}></i>Backup
+                    healthy</span
+                  ><span
+                    ><i style=${{ background: "var(--wn)" }}></i>Administrative
+                    issue or failed calls</span
+                  ><span
+                    ><i style=${{ background: "var(--bd)" }}></i>Backup failed
+                    or missing</span
+                  >
+                </div>
+
+                <div className="filters">
+                  <select
+                    aria-label="Operator"
+                    value=${fo}
+                    onChange=${(e) => setFo(e.target.value)}
+                  >
+                    ${ops.map((o) => html`<option key=${o}>${o}</option>`)}
+                  </select>
+                  <select
+                    aria-label="Zone"
+                    value=${fz}
+                    onChange=${(e) => setFz(e.target.value)}
+                  >
+                    ${zones.map((o) => html`<option key=${o}>${o}</option>`)}
+                  </select>
+                  <input
+                    placeholder="Search site, area, remarks"
+                    value=${q}
+                    onChange=${(e) => setQ(e.target.value)}
+                  />
+                </div>
+
+                <div className="kpis">
+                  <div className="kpi">
+                    <div className="num">${S.n}</div>
+                    <small>sites audited</small>
+                  </div>
+                  <div className="kpi">
+                    <div className="num">
+                      ${S.calls ? Math.round((S.ok / S.calls) * 100) : 0}%
+                    </div>
+                    <small>voice calls successful (${S.ok}/${S.calls})</small>
+                  </div>
+                  <div className="kpi">
+                    <div className="num">${f1(S.dl)}</div>
+                    <small>avg download, Mbps</small>
+                  </div>
+                  <div className="kpi">
+                    <div className="num">${f1(S.ul)}</div>
+                    <small>avg upload, Mbps</small>
+                  </div>
+                  <div className="kpi">
+                    <div className="num">${S.health}/${S.n}</div>
+                    <small>pass backup health check</small>
+                  </div>
+                  <div className="kpi">
+                    <div
+                      className="num"
+                      style=${{ color: S.bad ? "var(--bd)" : "inherit" }}
+                    >
+                      ${S.bad}
+                    </div>
+                    <small>sites with failed or no backup</small>
+                  </div>
+                </div>
+
+                <div className="grid">
+                  <div className="card">
+                    <h2>Throughput by site</h2>
+                    ${sorted.map(
+                      (r) =>
+                        html`<div className="row" key=${r.id}>
+                          <span className="l"
+                            >${r.siteId}
+                            <span className="sub"
+                              >${r.op.split("/")[0]}</span
+                            ></span
+                          >
+                          <span className="tr"
+                            ><${Bar}
+                              v=${r.dl}
+                              max=${maxT}
+                              c="var(--ac)" /><${Bar}
+                              v=${r.ul}
+                              max=${maxT}
+                              c="var(--ul)" /></span
+                          ><span className="v">${f1(r.dl)}</span>
+                        </div>`,
+                    )}
+                    <div className="key">
+                      <i style=${{ background: "var(--ac)" }}></i>Download<i
+                        style=${{ background: "var(--ul)" }}
+                      ></i
+                      >Upload (Mbps)
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <h2>Backup hours per site</h2>
+                    ${[...data]
+                      .sort((a, b) => a.backup - b.backup)
+                      .map(
+                        (r) =>
+                          html`<div className="row" key=${r.id}>
+                            <span className="l">${r.siteId}</span>
+                            <span className="tr one"
+                              ><${Bar}
+                                v=${r.backup}
+                                max=${maxB}
+                                c=${"var(--" +
+                                (st(r) === "bad" ? "bd" : "ok") +
+                                ")"} /></span
+                            ><span className="v">${r.backup} h</span>
+                          </div>`,
+                      )}
+                    <div className="key">
+                      Average backup ${f1(S.bk)} h against ${f1(S.ls)} h average
+                      load shedding.
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <h2>Power arrangements</h2>
+                    ${[
+                      ["Commercial power", S.comm],
+                      ["Generator", S.gen],
+                      ["Solar", S.sol],
+                      ["Backup health passed", S.health],
+                    ].map(
+                      ([l, v]) =>
+                        html`<div className="row" key=${l}>
+                          <span className="l">${l}</span>
+                          <span className="tr one"
+                            ><${Bar} v=${v} max=${S.n} c="var(--ac)" /></span
+                          ><span className="v">${v}/${S.n}</span>
+                        </div>`,
+                    )}
+                    <h2 style=${{ marginTop: 20 }}>By operator</h2>
+                    <div className="scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Operator</th>
+                            <th>Sites</th>
+                            <th>DL</th>
+                            <th>UL</th>
+                            <th>Backup ok</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${byOp.map(
+                            (o) =>
+                              html`<tr key=${o.k}>
+                                <td>${o.k}</td>
+                                <td>${o.n}</td>
+                                <td>${f1(o.dl)}</td>
+                                <td>${f1(o.ul)}</td>
+                                <td>${o.h}/${o.n}</td>
+                              </tr>`,
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <h2>Needs follow-up (${issues.length})</h2>
+                    ${issues.length
+                      ? issues.map(
+                          (r) =>
+                            html`<p key=${r.id} style=${{ margin: "0 0 10px" }}>
+                              <b>${r.siteId}</b>
+                              <span className="sub">${r.op}</span><br />
+                              ${!yn(r.health) &&
+                              html`<span className="chip b"
+                                >Backup check failed</span
+                              >`}${r.backup === 0 &&
+                              html`<span className="chip b"
+                                >No backup</span
+                              >`}${adminIssue(r) &&
+                              html`<span className="chip b"
+                                >${r.admin}</span
+                              >`}<br /><span className="sub">${r.remarks}</span>
+                            </p>`,
+                        )
+                      : html`<p className="sub">
+                          No open issues in the current selection.
+                        </p>`}
+                  </div>
+                </div>
+
+                <div className="card">
+                  <div className="head">
+                    <h2>All records (${tdata.length})</h2>
+                    <input
+                      type="search"
+                      aria-label="Search records"
+                      placeholder="Search this table"
+                      value=${tq}
+                      onChange=${(e) => setTq(e.target.value)}
+                    />
+                  </div>
+                  <div className="scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Site</th>
+                          <th>Operator</th>
+                          <th>Tech</th>
+                          <th>Calls</th>
+                          <th>DL / UL</th>
+                          <th>Commercial</th>
+                          <th>Genset</th>
+                          <th>Solar</th>
+                          <th>Backup</th>
+                          <th>Health</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${tdata.length
+                          ? null
+                          : html`<tr>
+                              <td colspan="11" className="sub">
+                                No records match this search.
+                              </td>
+                            </tr>`}${tdata.map(
+                          (r) =>
+                            html`<${React.Fragment} key=${r.id}>
+                              <tr
+                                className="r"
+                                onClick=${() =>
+                                  setOpen(open === r.id ? null : r.id)}
+                              >
+                                <td><b>${r.siteId}</b></td>
+                                <td>${r.op}</td>
+                                <td>${r.tech}</td>
+                                <td>${r.ok}/${r.calls}</td>
+                                <td>${f1(r.dl)} / ${f1(r.ul)}</td>
+                                <td><${Chip} y=${yn(r.commercial)} /></td>
+                                <td><${Chip} y=${yn(r.gen)} /></td>
+                                <td><${Chip} y=${yn(r.solar)} /></td>
+                                <td>${r.backup} h</td>
+                                <td>
+                                  ${yn(r.health)
+                                    ? html`<span className="chip">Pass</span>`
+                                    : html`<span className="chip b"
+                                        >Fail</span
+                                      >`}
+                                </td>
+                                <td>
+                                  <button
+                                    className="del"
+                                    aria-label=${"Delete " + r.siteId}
+                                    onClick=${(e) => {
+                                      e.stopPropagation();
+                                      if (
+                                        confirm(
+                                          "Delete " +
+                                            r.siteId +
+                                            " for everyone?",
+                                        )
+                                      )
+                                        removeOne(r.id);
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
+                              </tr>
+                              ${open === r.id &&
+                              html`<tr className="det">
+                                <td colspan="11">
+                                  <dl>
+                                    <dt>Area</dt>
+                                    <dd>${r.area}, ${r.district}</dd>
+                                    <dt>Parliamentarian</dt>
+                                    <dd>
+                                      ${r.mp}${r.mpMin
+                                        ? " (" + r.mpMin + ")"
+                                        : ""}
+                                    </dd>
+                                    <dt>Site contact</dt>
+                                    <dd>
+                                      ${r.cPoc || "—"}
+                                      ${r.cPocDesig
+                                        ? "(" + r.cPocDesig + ")"
+                                        : ""}
+                                      ${r.cPocNo}
+                                    </dd>
+                                    <dt>Administrative issues</dt>
+                                    <dd>${adminIssue(r) ? r.admin : "None"}</dd>
+                                    <dt>Recommendation</dt>
+                                    <dd>${r.remarks || "—"}</dd>
+                                  </dl>
+                                </td>
+                              </tr>`}
+                            <//>`,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>`}
+        </div>`;
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        React.createElement(App),
+      );
+    </script>
+  </body>
+</html>
