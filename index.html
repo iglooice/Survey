@@ -257,7 +257,7 @@ function Login(){
     try{await auth.signInWithEmailAndPassword(em.trim(),pw)}
     catch(x){setEr(x.code==='auth/too-many-requests'?'Too many attempts. Wait a few minutes and try again.':x.code==='auth/network-request-failed'?'Network problem. Check your connection.':'Incorrect email or password.');setBusy(false)}};
   return html`<div className="wrap"><form className="card login" onSubmit=${go}>
-    <img className="logo" src="C://Users//NHS//Downloads//dash_logo.png" alt="Dashboard logo" /><p className="sub">Sign in with the login you were given.</p>
+    <img className="logo" src="https://github.com/iglooice/Survey/blob/main/logo.png?raw=true" alt="Dashboard logo" /><p className="sub">Sign in with the login you were given.</p>
     ${er&&html`<div className="err" role="alert">${er}</div>`}
     <div className="form"><label>Email<input type="email" autoComplete="username" required value=${em} onChange=${e=>setEm(e.target.value)} /></label>
     <label>Password<input type="password" autoComplete="current-password" required value=${pw} onChange=${e=>setPw(e.target.value)} /></label></div>
