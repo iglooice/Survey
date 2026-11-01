@@ -65,6 +65,11 @@ input,select,textarea{font:400 14px "Source Sans 3",sans-serif;padding:7px 9px;b
 .login .logo{display:block;width:100%;max-width:150px;height:auto;margin:0 auto 14px}
 .login .sub{text-align:center}
 header .btns button{display:inline-flex;align-items:center;gap:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--sf);color:var(--ink);border:1px solid var(--ln);border-left:6px solid var(--ok);padding:10px 16px;border-radius:8px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:90vw}
+.toast.bad{border-left-color:var(--bd)}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-2px;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+button:disabled{opacity:.75;cursor:progress}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--ln);margin-bottom:18px;overflow-x:auto}
 .tab{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:8px 14px;color:var(--mu);white-space:nowrap}
 .tab.on{color:var(--ink);border-bottom-color:var(--ac)}
@@ -133,15 +138,17 @@ function App(){
   const [fo,setFo]=useState('All'),[fz,setFz]=useState('All'),[q,setQ]=useState(''),[open,setOpen]=useState(null),[add,setAdd]=useState(false);
   const [form,setForm]=useState({});
   const [view,setView]=useState('dash'),[sq,setSq]=useState(''),[editId,setEditId]=useState(null);
+  const [saving,setSaving]=useState(false),[toastMsg,setToastMsg]=useState(null);
+  const toast=(m,k)=>{setToastMsg({m,k});setTimeout(()=>setToastMsg(null),3500)};
   const fileRef=useRef();
-  const guard=async fn=>{if(!db){setErr('Firebase is not set up yet. Paste your Firebase config near the top of this file.');return}try{await fn()}catch(x){setErr('Could not save to the shared database: '+x.message)}};
+  const guard=async fn=>{if(!db){setErr('Backend is not set up yet. Paste your backend config near the top of this file.');return false}try{await fn();return true}catch(x){setErr('Could not save to the shared database: '+x.message);return false}};
   const replaceAll=l=>guard(async()=>{await wipe();await writeMany(l)});
   const saveOne=r=>guard(()=>writeMany([r]));
   const removeOne=id=>guard(()=>col().doc(id).delete());
   const updateOne=(id,r)=>guard(()=>col().doc(id).update(clean(r)));
   const startEdit=r=>{const f={};FIELDS.forEach(([k,,t])=>{f[k]=t==='yn'?(r[k]===''||r[k]==null?'':yn(r[k])?'Yes':'No'):(r[k]??'')});setForm(f);setEditId(r.id);setAdd(true);window.scrollTo({top:0,behavior:'smooth'})};
   useEffect(()=>{
-    if(!db){setErr('Firebase is not set up yet. Paste your Firebase config near the top of this file.');setReady(true);return}
+    if(!db){setErr('Backend is not set up yet. Paste your Backend config near the top of this file.');setReady(true);return}
     return col().orderBy('createdAt').onSnapshot(s=>{setRows(s.docs.map(d=>({...d.data(),id:d.id})));setReady(true)},
       e=>{setErr('Cannot read the shared database: '+e.message);setReady(true)})},[]);
   
@@ -153,9 +160,13 @@ function App(){
     if(!String(form.siteId||'').trim()){setErr('Enter a Site ID before saving the record.');return}
     const last=rows[rows.length-1]||{};
     setErr('');
-    if(editId)await updateOne(editId,enrich({...(rows.find(x=>x.id===editId)||{}),...form,fail:0}));
-    else await saveOne(enrich({...last,...form,fail:0}));
-    setForm({});setEditId(null);setAdd(false)};
+    if(editId){setSaving(true);
+      const ok=await updateOne(editId,enrich({...(rows.find(x=>x.id===editId)||{}),...form,fail:0}));
+      setSaving(false);
+      if(ok){setForm({});setEditId(null);setAdd(false);toast('Changes saved successfully.','ok')}else toast('Could not save changes. Please try again.','bad');
+      return}
+    await saveOne(enrich({...last,...form,fail:0}));
+    setForm({});setAdd(false)};
 
   const ops=useMemo(()=>['All',...new Set(rows.map(r=>r.op))],[rows]);
   const zones=useMemo(()=>['All',...new Set(rows.map(r=>r.zone))],[rows]);
@@ -185,6 +196,7 @@ function App(){
       <div className="sub">Network quality and power backup at surveyed cell sites</div></div>${bar}</header>
     ${err&&html`<div className="err" role="alert">${err}</div>`}
     ${!ready&&html`<p className="sub">Connecting to the shared database…</p>`}
+    ${toastMsg&&html`<div className=${'toast '+toastMsg.k} role="status" aria-live="polite">${toastMsg.m}</div>`}
 
     ${add&&html`<div className="card" style=${{marginBottom:18}}><h2>${editId?'Edit record':'Add a record'}</h2>
       ${!editId&&html`<p className="sub" style=${{marginTop:-6}}>Visit details you leave blank (contacts, coordinates, parliamentarian) are copied from the last record.</p>`}
@@ -192,7 +204,7 @@ function App(){
         ${t==='yn'?html`<select value=${form[k]||''} onChange=${e=>setForm({...form,[k]:e.target.value})}><option value="">Choose</option><option>Yes</option><option>No</option></select>`
         :t==='area'?html`<textarea rows="2" value=${form[k]||''} onChange=${e=>setForm({...form,[k]:e.target.value})}></textarea>`
         :html`<input type=${t||'text'} step="any" value=${form[k]??''} onChange=${e=>setForm({...form,[k]:e.target.value})} />`}</label>`)}</div>
-      <div className="btns" style=${{marginTop:12}}><button className="pri" onClick=${submit}>${editId?'Save changes':'Save record'}</button><button onClick=${()=>{setForm({});setEditId(null);setAdd(false)}}>Cancel</button></div></div>`}
+      <div className="btns" style=${{marginTop:12}}><button className="pri" disabled=${saving} onClick=${submit}>${saving&&editId?html`<i className="spin"></i>`:null}${saving&&editId?'Saving…':editId?'Save changes':'Save record'}</button><button onClick=${()=>{setForm({});setEditId(null);setAdd(false)}}>Cancel</button></div></div>`}
 
     ${!rows.length?html`<div className=${'drop'+(drag?' on':'')} onDragOver=${e=>{e.preventDefault();setDrag(true)}} onDragLeave=${()=>setDrag(false)} onDrop=${e=>{e.preventDefault();setDrag(false);load(e.dataTransfer.files[0])}}>
         <h2>Drop your Annex A spreadsheet here</h2><p className="sub">.xlsx, .xls or .csv with two header rows, then one row per site. Everything is saved to a shared database, so anyone with the link sees the same data. You can also add records by hand with “Add a record”.</p>
@@ -252,7 +264,7 @@ function App(){
 }
 function Login(){
   const [em,setEm]=useState(''),[pw,setPw]=useState(''),[busy,setBusy]=useState(false);
-  const [er,setEr]=useState(auth?'':'Firebase is not set up yet. Paste your Firebase config near the top of this file.');
+  const [er,setEr]=useState(auth?'':'Backend is not set up yet. Paste your backend config near the top of this file.');
   const go=async e=>{e.preventDefault();if(!auth)return;setBusy(true);setEr('');
     try{await auth.signInWithEmailAndPassword(em.trim(),pw)}
     catch(x){setEr(x.code==='auth/too-many-requests'?'Too many attempts. Wait a few minutes and try again.':x.code==='auth/network-request-failed'?'Network problem. Check your connection.':'Incorrect email or password.');setBusy(false)}};
