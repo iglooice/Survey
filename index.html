@@ -182,7 +182,7 @@ function App(){
 
   return html`<div className="wrap">
     <header><div><h1>Field audit dashboard</h1>
-      <div className="sub">${rows.length?[...new Set(rows.map(r=>r.district))].join(', ')+' · '+(dates.length?showDate(dates[0])+(dates.length>1?' to '+showDate(dates[dates.length-1]):''):'')+' · '+[...new Set(rows.map(r=>r.mp))].filter(Boolean).join(', ')+(src?' · '+src:''):'Network quality and power backup at surveyed cell sites'}</div></div>${bar}</header>
+      <div className="sub">Network quality and power backup at surveyed cell sites</div></div>${bar}</header>
     ${err&&html`<div className="err" role="alert">${err}</div>`}
     ${!ready&&html`<p className="sub">Connecting to the shared database…</p>`}
 
